@@ -8,10 +8,12 @@ on:
     branches:
       - master
       - staging
+      - main-magdeburg
   pull_request:
     branches:
       - master
       - staging
+      - main-magdeburg
   workflow_dispatch:
 
 env:
@@ -29,8 +31,8 @@ env:
   MAPBOXLAYERNAME: "abc"
   LOGGING: INFO
   SKIP_MAPBOX: "True"
-  WEATHER_HARVEST_LAT: "52.520008"
-  WEATHER_HARVEST_LNG: "13.404954"
+  WEATHER_HARVEST_LAT: "52.120533"
+  WEATHER_HARVEST_LNG: "11.627634"
 
 jobs:
   test-harvest:
@@ -56,35 +58,41 @@ jobs:
         with:
           repository: technologiestiftung/giessdenkiez-de-postgres-api
           path: api
+      - name: Get the source for the api main-magdeburg
+        uses: actions/checkout@v4
+        if: github.event.pull_request.base.ref == 'main-magdeburg' || github.ref == 'refs/heads/main-magdeburg'
+        with:
+          repository: code-for-magdeburg/magdeburggiesst-postgres-api-2025
+          path: api
       - uses: supabase/setup-cli@v1
         with:
           version: 1.136.3
       - name: build the harvester
-        run: cd harvester && docker build --tag technologiestiftung/giessdenkiez-de-dwd-harvester:test .
+        run: cd harvester && docker build --tag code-for-magdeburg/magdeburggiesst-dwd-harvester-2025:test .
       - name: Start the api
         id: api-start
         run: cd api && supabase start | grep -w "service_role key" | cut -d ":" -f 2 | xargs |  tr -d '\n' | awk '{print "service_role_key="$1}' >> "$GITHUB_OUTPUT" && cd ..
       - name: run the harvester
-        run: docker run --env PG_SERVER='0.0.0.0' --env WEATHER_HARVEST_LAT --env WEATHER_HARVEST_LNG --env SKIP_MAPBOX --env PG_DB --env PG_PORT --env PG_USER --env PG_PASS --env SUPABASE_URL --env SUPABASE_SERVICE_ROLE_KEY='${{ steps.api-start.outputs.service_role_key }}' --env LIMIT_DAYS='30' --env SURROUNDING_SHAPE_FILE='/app/assets/buffer.shp' --env SUPABASE_BUCKET_NAME --env MAPBOXTOKEN --env MAPBOXUSERNAME --env MAPBOXTILESET --env MAPBOXLAYERNAME --env LOGGING --env OUTPUT --network host technologiestiftung/giessdenkiez-de-dwd-harvester:test
+        run: docker run --env PG_SERVER='0.0.0.0' --env WEATHER_HARVEST_LAT --env WEATHER_HARVEST_LNG --env SKIP_MAPBOX --env PG_DB --env PG_PORT --env PG_USER --env PG_PASS --env SUPABASE_URL --env SUPABASE_SERVICE_ROLE_KEY='${{ steps.api-start.outputs.service_role_key }}' --env LIMIT_DAYS='30' --env SURROUNDING_SHAPE_FILE='/app/assets/buffer.shp' --env SUPABASE_BUCKET_NAME --env MAPBOXTOKEN --env MAPBOXUSERNAME --env MAPBOXTILESET --env MAPBOXLAYERNAME --env LOGGING --env OUTPUT --network host code-for-magdeburg/magdeburggiesst-dwd-harvester-2025:test
       - name: stop the api
         run: cd api && supabase stop && cd ..
-  release:
-    name: semantic-release
-    needs: [test-harvest]
-    runs-on: ubuntu-latest
-    outputs:
-      new-release-published: ${{ steps.semantic-release.outputs.new_release_published }}
-      new-release-version: ${{ steps.semantic-release.outputs.new_release_version }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-      - run: npm ci
-      - id: semantic-release
-        run: npx semantic-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+#  release:
+#    name: semantic-release
+#    needs: [test-harvest]
+#    runs-on: ubuntu-latest
+#    outputs:
+#      new-release-published: ${{ steps.semantic-release.outputs.new_release_published }}
+#      new-release-version: ${{ steps.semantic-release.outputs.new_release_version }}
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          persist-credentials: false
+#      - uses: actions/setup-node@v4
+#        with:
+#          node-version-file: ".nvmrc"
+#      - run: npm ci
+#      - id: semantic-release
+#        run: npx semantic-release
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+#          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
