@@ -28,7 +28,8 @@ def preprocess_trees_csv(trees_csv_full_path, temp_dir):
     subprocess.call(
         [
             "tippecanoe",
-            "-zg",
+            # "-zg",
+            "-z15",
             "-o",
             trees_preprocessed_full_path,
             "--force",
