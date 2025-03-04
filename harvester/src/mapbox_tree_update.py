@@ -29,7 +29,7 @@ def preprocess_trees_csv(trees_csv_full_path, temp_dir):
         [
             "tippecanoe",
             # "-zg",
-            "-z15",
+            "-z15", # TODO: Change back to -zg later
             "-o",
             trees_preprocessed_full_path,
             "--force",
