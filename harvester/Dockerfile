@@ -30,6 +30,7 @@ RUN git clone https://github.com/mapbox/tippecanoe.git && cd tippecanoe &&  make
 COPY . /app/
 
 ARG SURROUNDING_SHAPE_FILE
+ENV SURROUNDING_SHAPE_FILE="/app/assets/magdeburg.shp"
 RUN cd /app/prepare && SHAPE_RESTORE_SHX=YES python create-buffer.py
 
 CMD /app/run_harvest.sh
